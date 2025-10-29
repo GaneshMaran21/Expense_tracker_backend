@@ -51,7 +51,7 @@ export class AuthGuard implements CanActivate {
         // Set new cookies for web
         res.cookie('accessToken', newTokens.accessToken, { httpOnly: true, sameSite: 'strict' });
         res.cookie('refreshToken', newTokens.refreshToken, { httpOnly: true, sameSite: 'strict' });
-
+        res.cookie('newAccessToken',true)
         // Optional: also attach to response headers for mobile/Swagger
         res.setHeader('x-access-token', newTokens.accessToken);
         res.setHeader('x-refresh-token', newTokens.refreshToken);
