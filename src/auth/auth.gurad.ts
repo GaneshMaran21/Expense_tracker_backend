@@ -55,6 +55,7 @@ export class AuthGuard implements CanActivate {
         // Optional: also attach to response headers for mobile/Swagger
         res.setHeader('x-access-token', newTokens.accessToken);
         res.setHeader('x-refresh-token', newTokens.refreshToken);
+        res.setHeader('new-access-token',"true")
 
         // Attach payload to request
         req['user'] = this.jwtService.decode(newTokens.accessToken);
