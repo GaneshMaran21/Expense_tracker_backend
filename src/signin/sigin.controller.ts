@@ -22,7 +22,7 @@ export class SignInController {
     const clientType =
       req.headers["x-client-type"] ||
       (req.headers["user-agent"]?.includes("okhttp") ? "mobile" : "web");
-
+      res.setHeader('new-access-token',"true")
     if (clientType === "web") {
       // 🍪 Web: send as cookies
       res.cookie("accessToken", accessToken, {
