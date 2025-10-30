@@ -16,7 +16,7 @@ export class SignInController {
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request
   ) {
-    const { accessToken, refreshToken } = await this.signInService.siginUser(data);
+    const { accessToken, refreshToken,user_name } = await this.signInService.siginUser(data);
 
     // 🔍 Detect client type
     const clientType =
@@ -36,13 +36,14 @@ export class SignInController {
         secure: true,
       });
 
-      return { message: "Login successful (web)",accessToken };
+      return { message: "Login successful (web)",accessToken,user_name };
     } else {
       // 📱 Mobile: send in JSON response
       return {
         message: "Login successful (mobile)",
         accessToken,
         refreshToken,
+        user_name,
       };
     }
   }
