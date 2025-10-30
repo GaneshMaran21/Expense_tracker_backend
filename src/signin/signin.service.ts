@@ -23,7 +23,8 @@ export class SignInService{
             throw new UnauthorizedException('Password is incorrect')
         }
         else if(isUserExisted){
-            return await this.generateUserTokens(isUserExisted?._id)
+          const tokens = await this.generateUserTokens(isUserExisted?._id)
+          return {...tokens,user_name:isUserExisted?.user_name}
         }
         else{
             throw  new NotFoundException('user name and password is incorrect')
