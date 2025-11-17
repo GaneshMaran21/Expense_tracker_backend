@@ -36,7 +36,7 @@ export class SignInService{
 
 
     async generateUserTokens(userId:any){
-    const accessToken = this.jwtService.sign({userId},{expiresIn:'15m'})
+    const accessToken = this.jwtService.sign({userId},{expiresIn:'1h'})
     const refreshToken = uuidv4()
     await this.storeRefreshToken(refreshToken,userId)
     return {accessToken,refreshToken}
@@ -44,7 +44,7 @@ export class SignInService{
 
   async storeRefreshToken(token:string,userId){
     let expiryDate=new Date();
-    expiryDate.setDate(expiryDate.getDate() + 3)
+    expiryDate.setDate(expiryDate.getDate() + 7)
     const refreshDoc = new this.refreshModel({
     user: userId,
     token,
