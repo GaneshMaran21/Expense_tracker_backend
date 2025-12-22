@@ -38,7 +38,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(port_number);
+  await app.listen(port_number,'0.0.0.0');
   console.log(`App is running on port ${port_number}`)
 }
 
