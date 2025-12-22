@@ -34,7 +34,7 @@ async function bootstrap() {
   }));
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: true, // Allow all origins for mobile apps
     credentials: true,
   });
 

@@ -21,6 +21,11 @@ import { SignUpModule } from "src/signup/signup.module";
     SignUpModule,
   ],
   providers: [AuthGuard, SignInService],
-  exports: [AuthGuard, JwtModule, SignInService], // ✅ export SignInService
+  exports: [
+    AuthGuard,
+    JwtModule,
+    SignInService,
+    MongooseModule.forFeature([{ name: RefreshTokenSchema.name, schema: refreshTokenSchema }]),
+  ], // Export MongooseModule to make RefreshTokenSchemaModel available
 })
 export class AuthModule {}
