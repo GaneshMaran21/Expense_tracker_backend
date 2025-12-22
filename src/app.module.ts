@@ -8,6 +8,7 @@ import { SignInModule } from './signin/signin.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from './user/user.module';
+import { ExpenseModule } from './expenses/expense.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -30,7 +31,8 @@ import { UserModule } from './user/user.module';
     SignUpModule,
     SignInModule,
     AuthModule,
-    UserModule
+    UserModule,
+    ExpenseModule
   ],
   controllers: [AppController],
   providers: [AppService],
