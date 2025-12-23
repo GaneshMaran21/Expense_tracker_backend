@@ -4,7 +4,6 @@ import { Model } from 'mongoose';
 import { Expense, ExpenseDocument } from './expense.schema';
 import { CreateExpenseDto } from '../dto/create-expense.dto';
 import { UpdateExpenseDto } from '../dto/update-expense.dto';
-import { getCurrentIST, toUTC } from '../utils/istDate.plugin';
 
 @Injectable()
 export class ExpenseService {
@@ -13,10 +12,19 @@ export class ExpenseService {
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, userId: string): Promise<Expense> {
-    // Convert date to UTC before saving (plugin will handle IST conversion)
-    const dateToSave = createExpenseDto.date 
-      ? toUTC(createExpenseDto.date) 
-      : toUTC(getCurrentIST());
+    // The date comes from frontend as ISO string
+    // Frontend sends UTC equivalent of midnight IST for the selected date
+    // We store it as-is in UTC (MongoDB stores dates in UTC)
+    let dateToSave: Date;
+    if (createExpenseDto.date) {
+      // Parse the date string - frontend sends UTC equivalent of midnight IST
+      dateToSave = new Date(createExpenseDto.date);
+    } else {
+      // If no date provided, use current date at midnight UTC
+      const now = new Date();
+      now.setUTCHours(0, 0, 0, 0);
+      dateToSave = now;
+    }
     
     const expense = new this.expenseModel({
       ...createExpenseDto,
@@ -24,18 +32,26 @@ export class ExpenseService {
       date: dateToSave,
       is_synced: true,
     });
-    return expense.save();
+    const savedExpense = await expense.save();
+    // Convert to plain object to ensure toJSON transform is called
+    return savedExpense.toJSON();
   }
 
   async findAll(userId: string, filters?: any): Promise<Expense[]> {
     const query: any = { user_id: userId };
 
     // Apply filters
-    if (filters?.start_date) {
-      query.date = { ...query.date, $gte: new Date(filters.start_date) };
-    }
-    if (filters?.end_date) {
-      query.date = { ...query.date, $lte: new Date(filters.end_date) };
+    // Date filters: the date field is stored as UTC equivalent of midnight IST
+    if (filters?.start_date || filters?.end_date) {
+      query.date = {};
+      if (filters?.start_date) {
+        const startDate = new Date(filters.start_date);
+        query.date.$gte = startDate;
+      }
+      if (filters?.end_date) {
+        const endDate = new Date(filters.end_date);
+        query.date.$lte = endDate;
+      }
     }
     if (filters?.category_id) {
       query.category_id = filters.category_id;
@@ -50,7 +66,18 @@ export class ExpenseService {
       query.amount = { ...query.amount, $lte: filters.max_amount };
     }
 
-    return this.expenseModel.find(query).sort({ date: -1 }).exec();
+    // Sort options: default to createdAt descending (newest first)
+    // sortBy: 'createdAt' | 'amount'
+    // sortOrder: 'asc' | 'desc'
+    const sortBy = filters?.sortBy || 'createdAt';
+    const sortOrder = filters?.sortOrder === 'asc' ? 1 : -1;
+    const sortField = sortBy === 'amount' ? 'amount' : 'createdAt';
+    const sortOptions: any = { [sortField]: sortOrder };
+
+    const expenses = await this.expenseModel.find(query).sort(sortOptions).exec();
+    // Convert to plain objects to ensure toJSON transform is called
+    const jsonResults = expenses.map(exp => exp.toJSON()) as any[];
+    return jsonResults;
   }
 
   async findOne(id: string, userId: string): Promise<Expense> {
@@ -58,7 +85,8 @@ export class ExpenseService {
     if (!expense) {
       throw new NotFoundException('Expense not found');
     }
-    return expense;
+    // Convert to plain object to ensure toJSON transform is called
+    return expense.toJSON();
   }
 
   async update(id: string, updateExpenseDto: UpdateExpenseDto, userId: string): Promise<Expense> {
@@ -69,7 +97,9 @@ export class ExpenseService {
 
     Object.assign(expense, updateExpenseDto);
     expense.is_synced = true;
-    return expense.save();
+    const savedExpense = await expense.save();
+    // Convert to plain object to ensure toJSON transform is called
+    return savedExpense.toJSON();
   }
 
   async remove(id: string, userId: string): Promise<void> {

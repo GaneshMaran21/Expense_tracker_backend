@@ -42,7 +42,8 @@ export class SignInService{
 
 
     async generateUserTokens(userId:any){
-    const accessToken = this.jwtService.sign({userId},{expiresIn:'1h'})
+    // Access token expires in 2 days
+    const accessToken = this.jwtService.sign({userId},{expiresIn:'2d'})
     const refreshToken = uuidv4()
     await this.storeRefreshToken(refreshToken,userId)
     return {accessToken,refreshToken}
