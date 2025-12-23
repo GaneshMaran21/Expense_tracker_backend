@@ -17,7 +17,7 @@ export class SignUpService{
         if(isExistingUser){
             throw new BadRequestException({
                 status:400,
-                error:"User Email or Email id is already exist"
+                error:"Username or email id already exists"
             })
         }
         
