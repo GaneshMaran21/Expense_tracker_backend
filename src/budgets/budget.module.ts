@@ -5,6 +5,7 @@ import { BudgetController } from './budget.controller';
 import { Budget, BudgetSchema } from './budget.schema';
 import { AuthModule } from '../auth/auth.module';
 import { Expense, ExpenseSchema } from '../expenses/expense.schema';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { Expense, ExpenseSchema } from '../expenses/expense.schema';
       { name: Expense.name, schema: ExpenseSchema }, // Needed for spending calculations
     ]),
     AuthModule, // Import AuthModule to make AuthGuard available
+    NotificationModule, // Import NotificationModule to create budget alerts
   ],
   controllers: [BudgetController],
   providers: [BudgetService],
