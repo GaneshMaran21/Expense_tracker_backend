@@ -5,12 +5,15 @@ import { Budget, BudgetDocument } from './budget.schema';
 import { CreateBudgetDto } from '../dto/create-budget.dto';
 import { UpdateBudgetDto } from '../dto/update-budget.dto';
 import { Expense, ExpenseDocument } from '../expenses/expense.schema';
+import { NotificationService } from '../notifications/notification.service';
+import { NotificationType } from '../notifications/notification.schema';
 
 @Injectable()
 export class BudgetService {
   constructor(
     @InjectModel(Budget.name) private budgetModel: Model<BudgetDocument>,
     @InjectModel(Expense.name) private expenseModel: Model<ExpenseDocument>,
+    private notificationService: NotificationService,
   ) {}
 
   /**
@@ -229,6 +232,82 @@ export class BudgetService {
   }
 
   /**
+   * Create notification for budget alerts (threshold or over budget)
+   * Only creates notification if it hasn't been sent today
+   * Uses notification collection check to prevent duplicates (more reliable than last_alert_date)
+   */
+  private async createBudgetNotification(
+    userId: string,
+    budget: BudgetDocument,
+    spending: number,
+    percentageUsed: number,
+    isOverBudget: boolean,
+  ): Promise<void> {
+    // Determine notification type and details first
+    let notificationType: NotificationType;
+    let title: string;
+    let message: string;
+
+    if (isOverBudget) {
+      // Budget exceeded
+      notificationType = NotificationType.BUDGET_ALERT;
+      const overBy = spending - budget.amount;
+      title = `Budget Exceeded: ${budget.name}`;
+      message = `You've exceeded your ${budget.name} budget by ₹${overBy.toFixed(2)}. Current spending: ₹${spending.toFixed(2)} / ₹${budget.amount.toFixed(2)}`;
+    } else if (percentageUsed >= budget.alert_threshold) {
+      // Budget threshold reached
+      notificationType = NotificationType.BUDGET_THRESHOLD;
+      title = `Budget Alert: ${budget.name}`;
+      message = `You've used ${percentageUsed.toFixed(1)}% of your ${budget.name} budget. Current spending: ₹${spending.toFixed(2)} / ₹${budget.amount.toFixed(2)}`;
+    } else {
+      // No notification needed
+      return;
+    }
+
+    // Check if a notification of this type for this budget already exists today
+    // This prevents duplicates even if multiple calls happen simultaneously
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    const budgetId = (budget._id as any).toString();
+    
+    // Check for existing notification of same type for this budget today
+    const hasExistingNotification = await this.notificationService.hasNotificationToday(
+      userId,
+      notificationType,
+      budgetId,
+      todayStart,
+      todayEnd,
+    );
+    
+    // If notification already exists for today, skip creating a new one
+    if (hasExistingNotification) {
+      return;
+    }
+
+    // Create notification
+    await this.notificationService.create(
+      userId,
+      notificationType,
+      title,
+      message,
+      {
+        budget_id: budgetId,
+        budget_name: budget.name,
+        spending,
+        budget_amount: budget.amount,
+        percentage_used: percentageUsed,
+        is_over_budget: isOverBudget,
+      },
+    );
+
+    // Update last_alert_date for tracking
+    budget.last_alert_date = now;
+    await budget.save();
+  }
+
+  /**
    * Get budget status with spending calculation
    */
   async getBudgetStatus(id: string, userId: string): Promise<any> {
@@ -249,6 +328,14 @@ export class BudgetService {
     const isOverBudget = spending > budget.amount;
     const shouldAlert = percentageUsed >= budget.alert_threshold && !isOverBudget;
     const isOverThreshold = percentageUsed >= budget.alert_threshold;
+
+    // Create notification if needed (non-blocking)
+    this.createBudgetNotification(userId, budget, spending, percentageUsed, isOverBudget).catch(
+      (error) => {
+        // Log error but don't fail the request
+        console.error('Error creating budget notification:', error);
+      },
+    );
 
     return {
       ...budget.toJSON(),
@@ -294,6 +381,14 @@ export class BudgetService {
         const isOverBudget = spending > budget.amount;
         const shouldAlert = percentageUsed >= budget.alert_threshold && !isOverBudget;
         const isOverThreshold = percentageUsed >= budget.alert_threshold;
+
+        // Create notification if needed (non-blocking)
+        this.createBudgetNotification(userId, budget, spending, percentageUsed, isOverBudget).catch(
+          (error) => {
+            // Log error but don't fail the request
+            console.error('Error creating budget notification:', error);
+          },
+        );
 
         return {
           ...budget.toJSON(),
