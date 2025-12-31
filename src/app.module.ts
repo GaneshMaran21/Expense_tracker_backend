@@ -12,6 +12,7 @@ import { UserModule } from './user/user.module';
 import { ExpenseModule } from './expenses/expense.module';
 import { BudgetModule } from './budgets/budget.module';
 import { NotificationModule } from './notifications/notification.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { NotificationModule } from './notifications/notification.module';
     UserModule,
     ExpenseModule,
     BudgetModule,
-    NotificationModule
+    NotificationModule,
+    AnalyticsModule
   ],
   controllers: [AppController],
   providers: [AppService],
