@@ -13,6 +13,7 @@ import { ExpenseModule } from './expenses/expense.module';
 import { BudgetModule } from './budgets/budget.module';
 import { NotificationModule } from './notifications/notification.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { PasswordResetModule } from './password-reset/password-reset.module';
 
 @Module({
   imports: [
@@ -41,7 +42,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ExpenseModule,
     BudgetModule,
     NotificationModule,
-    AnalyticsModule
+    AnalyticsModule,
+    PasswordResetModule
   ],
   controllers: [AppController],
   providers: [AppService],
